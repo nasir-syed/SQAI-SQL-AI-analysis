@@ -249,7 +249,7 @@ class CLI:
 
     @staticmethod
     def _wrap_line(line: str, max_width: int = 75) -> List[str]:
-        """Wrap a line to fit terminal width."""
+        # Wrap a line to fit terminal width
         if len(line) <= max_width:
             return [line]
         
@@ -263,7 +263,7 @@ class CLI:
         return wrapped
 
     def _print_sql_block(self, sql: str) -> None:
-        """Syntax-highlight SQL keywords for terminals."""
+        # Syntax-highlight SQL keywords for terminals 
         keywords = {
             "SELECT", "FROM", "WHERE", "JOIN", "LEFT", "RIGHT", "INNER",
             "OUTER", "ON", "GROUP", "BY", "ORDER", "HAVING", "LIMIT",
@@ -299,7 +299,7 @@ class CLI:
             print("  " + highlighted) 
 
     def print_section_analysis_results(self, analysis_text: Optional[str], tokens: int) -> None:
-        """Display analytical insights from Mistral."""
+        # Display analytical insights from Mistral
         if not analysis_text:
             return
         
@@ -314,7 +314,7 @@ class CLI:
         print()
 
     def print_section_visualization_code(self, viz_code: Optional[str], tokens: int) -> None:
-        """Display generated visualization code."""
+        # Display generated visualization code
         if not viz_code:
             return
         

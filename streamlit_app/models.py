@@ -205,15 +205,30 @@ class VisualizationParser:
 
     @staticmethod
     def parse(viz_json_str: str) -> Optional[Dict[str, Any]]:
-        if not viz_json_str or viz_json_str == "null":
+        if not viz_json_str or viz_json_str.strip() == "":
+            return None
+
+        if viz_json_str.strip().lower() == "null":
             return None
 
         try:
             viz_spec = json.loads(viz_json_str)
             if viz_spec is None:
                 return None
-            return viz_spec
-        except json.JSONDecodeError:
+            
+            if isinstance(viz_spec, dict):
+                if "visualization" in viz_spec:
+                    return viz_spec.get("visualization")
+                elif "chart_type" in viz_spec:
+                    return viz_spec
+                elif len(viz_spec) > 0:
+                    return viz_spec
+            
+            return None
+        except json.JSONDecodeError as e:
+            import sys
+            print(f"DEBUG: Failed to parse visualization JSON: {str(e)}", file=sys.stderr)
+            print(f"DEBUG: Input was: {viz_json_str[:200]}", file=sys.stderr)
             return None
 
     @staticmethod

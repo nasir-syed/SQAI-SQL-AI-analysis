@@ -31,13 +31,13 @@ st.markdown("""
     /* ── DESIGN TOKENS (dark) ───────────────────────────────────────────────── */
     :root {
         --background:        #000000;
-        --foreground:        #fafafa;
+        --foreground:        #f3f3f3;
         --muted:             #111111;
         --muted-foreground:  #a1a1aa;
         --border:            #27272a;
-        --ring:              #fafafa;
+        --ring:              #f3f3f3;
         --accent:            #18181b;
-        --accent-foreground: #fafafa;
+        --accent-foreground: #f3f3f3;
         --destructive:       #ef4444;
         --radius:            6px;
         --font-sans:         'Geist', ui-sans-serif, system-ui, sans-serif;
@@ -279,37 +279,49 @@ st.markdown("""
     [data-testid="stMetricDelta"] {
         color: var(--muted-foreground) !important;
     }
+            
 
-    /* ── EXPANDER ────────────────────────────────────────────────────────────── */
-    .streamlit-expanderHeader {
-        font-size: 0.875rem !important;
-        font-weight: 500 !important;
-        color: var(--foreground) !important;
+    /* ── EXPANDER ─────────────────────────────────────────────────────────── */
+    details {
         background: var(--muted) !important;
         border: 1px solid var(--border) !important;
         border-radius: var(--radius) !important;
-        padding: 0.625rem 0.875rem !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
-
-        transition: background 0.15s ease !important;
     }
-    .streamlit-expanderHeader:hover {
-        background: var(--accent) !important;
-    }
-            
-    .streamlit-expanderHeader svg {
-        flex-shrink: 0 !important;
-    }     
 
-    .streamlit-expanderContent {
-        border: 1px solid var(--border) !important;
-        border-top: none !important;
-        border-radius: 0 0 var(--radius) var(--radius) !important;
-        padding: 1rem !important;
+    details > summary {
         background: var(--muted) !important;
     }
+
+    details[open] {
+        background: var(--muted) !important;
+    }
+
+    details[open] > div,
+    details[open] > div > div {
+        background: var(--muted) !important;
+        color: var(--foreground) !important;
+    }
+
+    /* Target Streamlit's internal expander structure */
+    [data-testid="stExpander"] {
+        background: var(--muted) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius) !important;
+        overflow: hidden !important;
+    }
+
+    [data-testid="stExpander"] > details {
+        background: var(--muted) !important;
+    }
+
+    [data-testid="stExpander"] > details > div {
+        background: var(--muted) !important;
+    }
+
+    [data-testid="stExpander"] details[open] summary ~ div {
+        background: var(--muted) !important;
+    }
+            
 
     /* ── CODE BLOCKS ─────────────────────────────────────────────────────────── */
     .stCodeBlock, code, pre {
@@ -371,16 +383,28 @@ st.markdown("""
     }
 
     /* ── MARKDOWN TEXT ───────────────────────────────────────────────────────── */
+    .stMarkdown {
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        word-break: normal !important;
+    }
+
     .stMarkdown p,
     .stMarkdown li,
     .stMarkdown span {
         color: var(--foreground) !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        word-break: normal !important;
+        white-space: normal !important;
+        line-height: 1.6 !important;
     }
 
     .stMarkdown a {
         color: var(--foreground) !important;
         text-decoration: underline;
         text-underline-offset: 3px;
+        word-break: break-word !important;
     }
 
     /* ── SCROLLBAR ───────────────────────────────────────────────────────────── */
@@ -406,6 +430,7 @@ st.markdown("""
         background: var(--muted) !important;
         opacity: 1 !important;
     }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -529,6 +554,7 @@ def _render_results(result: Dict[str, Any]) -> None:
     insights_json      = result.get("analysis", "")
     visualization_json = result.get("visualization_code", "")
     execution_results  = result.get("execution_results", {})
+    analysis_error     = result.get("analysis_error")
 
     result_df = execution_results.get("analysis_df")
     if result_df is None or result_df.empty:
@@ -539,9 +565,19 @@ def _render_results(result: Dict[str, Any]) -> None:
 
     # Insights tab
     with tab_insights:
+        if analysis_error:
+            st.warning("Analysis generation encountered an issue")
+            with st.expander("Error details", expanded=False):
+                st.code(analysis_error)
+            st.info("Tip: Your query results are available in the 'Data' tab, the issue is with AI-generated insights/visualizations.")
+            st.divider()
+        
         if insights_json:
             ResultsDisplay.render_insights(insights_json)
             st.divider()
+        else:
+            if not analysis_error:
+                st.info("No insights generated for this query.")
 
         viz_spec = VisualizationParser.parse(visualization_json)
 
@@ -557,7 +593,8 @@ def _render_results(result: Dict[str, Any]) -> None:
             else:
                 st.error(f"Invalid visualization spec: {error_msg}")
         else:
-            ResultsDisplay.render_visualization_placeholder(has_viz=False)
+            if not analysis_error:
+                ResultsDisplay.render_visualization_placeholder(has_viz=False)
 
     # Data tab
     with tab_data:
@@ -571,11 +608,7 @@ def _render_results(result: Dict[str, Any]) -> None:
             
         st.markdown("<div style='margin-top:1.25rem'></div>", unsafe_allow_html=True)
 
-        if len(result_df) > 50:
-            st.info(f"Showing first 50 of {len(result_df):,} rows.")
-            st.dataframe(result_df.head(50), width="stretch")
-        else:
-            st.dataframe(result_df, width="stretch")
+        st.dataframe(result_df, width="stretch")
 
         st.markdown("<div style='margin-top:0.75rem'></div>", unsafe_allow_html=True)
 

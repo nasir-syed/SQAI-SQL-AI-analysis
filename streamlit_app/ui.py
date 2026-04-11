@@ -53,10 +53,10 @@ class QueryInput:
         col1, col2, col3 = st.columns([1, 1, 2])
         
         with col1:
-            submit = st.button("Analyse", use_container_width=True, type="primary")
+            submit = st.button("Analyse", width='stretch', type="primary")
         
         with col2:
-            clear = st.button("Clear", use_container_width=True)
+            clear = st.button("Clear", width='stretch')
         
         with col3:
             st.markdown("")
@@ -75,22 +75,34 @@ class ResultsDisplay:
 
     @staticmethod
     def render_insights(insights: str) -> None:
-        st.subheader("Key Insights", divider="green")
+        st.subheader("Key Insights", divider="gray")
+        
+        if not insights or insights.strip() == "" or insights == "[]":
+            st.info("No insights available for this query.")
+            return
         
         try:
             import json
             insights_data = json.loads(insights)
             
-            if isinstance(insights_data, list):
+            if isinstance(insights_data, list) and len(insights_data) > 0:
                 for i, item in enumerate(insights_data, 1):
                     if isinstance(item, dict) and "insight" in item:
-                        st.markdown(f"**{i}.** {item['insight']}")
+                        insight_text = str(item['insight']).strip()
                     else:
-                        st.markdown(f"**{i}.** {item}")
+                        insight_text = str(item).strip()
+                    
+                    if insight_text:
+                        st.markdown(f"**{i}.** {insight_text}")
             else:
-                st.markdown(insights)
-        except (json.JSONDecodeError, TypeError):
-            st.markdown(insights)
+                insights_text = str(insights).strip()
+                st.markdown(insights_text)
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            insights_text = str(insights).strip()
+            if insights_text and "Unable to generate" not in insights_text:
+                st.markdown(insights_text)
+            elif "Unable to generate" in insights_text:
+                st.warning(insights_text)
 
     @staticmethod
     def render_visualization_placeholder(has_viz: bool) -> None:

@@ -130,6 +130,12 @@ class VisualizationRenderer:
 
     def _get_styling(self) -> Dict[str, Any]:
         styling = self.spec.get("styling", {})
+        figure_width = styling.get("figure_width", 10)
+        figure_height = styling.get("figure_height", 5)
+        
+        figure_width = min(figure_width, 10)
+        figure_height = min(figure_height, 6)
+        
         return {
             "color_palette": styling.get("color_palette", "viridis"),
             "marker_size": styling.get("marker_size", 6),
@@ -137,8 +143,8 @@ class VisualizationRenderer:
             "alpha": styling.get("alpha", 0.8),
             "grid": styling.get("grid", True),
             "rotation_x_labels": styling.get("rotation_x_labels", 0),
-            "figure_width": styling.get("figure_width", 12),
-            "figure_height": styling.get("figure_height", 6),
+            "figure_width": figure_width,
+            "figure_height": figure_height,
         }
 
     def _apply_styling(self, ax: plt.Axes, styling: Dict[str, Any]) -> None:
@@ -203,6 +209,7 @@ class VisualizationRenderer:
             colors = plt.cm.get_cmap(styling["color_palette"])(
                 np.linspace(0, 1, len(plot_data))
             )
+            
             ax.barh(plot_data[x_col].astype(str), plot_data[y_col], color=colors, alpha=styling["alpha"])
 
             ax.set_title(self.title, fontsize=14, fontweight="bold", pad=20)
@@ -482,12 +489,12 @@ def render_visualization(data: pd.DataFrame, viz_spec: Dict[str, Any]) -> None:
         fig = renderer.render()
 
         if fig:
-            st.pyplot(fig)
+            st.pyplot(fig, width='stretch')
             plt.close(fig)
 
             if st.button("Download Chart as PNG", key="download_chart"):
                 buf = io.BytesIO()
-                fig.savefig(buf, format="png")
+                fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
                 buf.seek(0)
                 st.download_button(
                     label="Download Chart",
